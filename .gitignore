@@ -1,0 +1,5 @@
+bun.lockb
+.wrangler/
+node_modules/
+*~
+*.swp
