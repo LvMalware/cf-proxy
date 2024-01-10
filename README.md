@@ -2,7 +2,7 @@
 
 > Proxy requests through Cloudflare workers
 
-A simple worker that acts as proxy to tunnel requests over the internet, forwarding them through Cloudflare's global network of servers. This way, we can archieve automatic IP address rotation, all coming from a trusted ASN (as CF is used by a hude number of websites, their ASNs are usually whitelisted on firewalls :stuck_out_tongue_winking_eye: ).
+A simple worker that acts as proxy to tunnel requests over the internet, forwarding them through Cloudflare's global network of servers. This way, we can archieve automatic IP address rotation, all coming from a trusted ASN (as CF is used by a huge number of websites, their ASNs are usually whitelisted on firewalls :stuck_out_tongue_winking_eye: ).
 
 ## Usage
 
