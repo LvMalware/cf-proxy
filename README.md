@@ -76,7 +76,7 @@ For example, lets suppose your worker instance has the address `myinstance.worke
 bun proxy.js -a secret -p 1080 socks myinstance.workers.dev
 ```
 
-The configure your browser to use `127.0.0.1:1080` as a SOCKS5 proxy and enjoy the automatic ip address rotation :wink:.
+Then configure your browser to use `127.0.0.1:1080` as a SOCKS5 proxy and enjoy the automatic ip address rotation :wink:.
 
 For a http proxy, just change the type from `socks` to `http`, for example:
 
