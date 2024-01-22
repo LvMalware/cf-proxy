@@ -13,7 +13,7 @@ curl -fsSL https://bun.sh/install | bash
 . ~/.bashrc
 ```
 
-You also need a Cloudflare account to deply the worker. A free account is fine, but you might experience some issues with page loading with slow website connections as the workers have a limitation of 10ms CPU time per request on the free tier, but as long as you don't try to download any big files this should be enough to navigate the internet.
+You also need a Cloudflare account to deploy the worker. A free account is fine, but you might experience some issues with page loading with slow website connections as the workers have a limitation of 10ms CPU time per request on the free tier, but as long as you don't try to download any big files this should be enough to navigate the internet.
 
 Once you have bun installed, go ahead and install `wrangler` using:
 
