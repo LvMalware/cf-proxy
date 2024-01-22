@@ -41,7 +41,6 @@ Now, edit the file at `src/index.js` to include an authorization token (necessar
              return new Response('Unauthorized', { status: 401 });
 ```
 
-Replace `<YOUR-AUTH-TOKEN>` with a token/password and also edit the `proxy.js` to include the same token in the authorization header.
 
 Now, you can deploy the worker with
 ```bash
@@ -49,10 +48,41 @@ cd worker/
 wrangler deploy
 ```
 
-Take note of the URL assigned to your worker and edit the `proxy.js` script again to replace `<YOUR-WORKER-DOMAIN>` with the hostname assigned to your deployment.
+You can run `bun proxy.js` (with no arguments) to see options:
 
-Now simply run `bun proxy.js` and configure your browser to use `127.0.0.1:8080` as an HTTP proxy and enjoy the automatic ip address rotation :wink:.
+```
+proxy.js - Proxy requests through CloudFlare workers
+Usage: bun proxy.js [options] <socks|http> <worker>
 
+Options:
+
+-h, --help         Show this help message and exit
+-p, --port         Port to listen on
+-a, --auth         Authorization header
+-v, --verbose      Enable verbose mode (default: false)
+
+Example: bun proxy.js -v -a auth-secret socks my-instance.workers.dev
+
+By Lucas V. Araujo <root@lva.sh>
+More at https://github.com/lvmalware
+
+```
+
+The general usage options are `-a` (to provide the authorization token), followed by the type of proxy and the worker's address.
+
+For example, lets suppose your worker instance has the address `myinstance.workers.dev`, with the auth token of `secret` and you want to run a SOCKS5 proxy server on port `1080` (default for SOCKS). This could be done with the following command:
+
+```bash
+bun proxy.js -a secret -p 1080 socks myinstance.workers.dev
+```
+
+The configure your browser to use `127.0.0.1:1080` as a SOCKS5 proxy and enjoy the automatic ip address rotation :wink:.
+
+For a http proxy, just change the type from `socks` to `http`, for example:
+
+```bash
+bun proxy.js -a secret -p 8080 http myinstance.workers.dev
+```
 
 ## Notes
 
