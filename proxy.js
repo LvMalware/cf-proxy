@@ -1,7 +1,8 @@
 const parseTarget = (data) => {
     try {
         return String(data).toLowerCase().split('\n')
-            .filter( l => l.startsWith('host: ') ).pop().split(': ').pop();
+            .filter( l => l.startsWith('host: ') ).pop().split(': ')
+            .pop().trim();
     } catch(e) {
         // log
     }
