@@ -1,12 +1,11 @@
 const parseTarget = (data) => {
-    let addr = String(data).split('\n').shift().split(' ')[1].split(':');
-    let host = addr[0];
-    let port = addr[1];
-    if (addr[1].startsWith('//')) {
-        host = addr[1].replaceAll('/', '');
-        port = addr[2] || ((addr[0] == 'http') ? 80 : 443);
+    try {
+        return String(data).toLowerCase().split('\n')
+            .filter( l => l.startsWith('host: ') ).pop().split(': ').pop();
+    } catch(e) {
+        // log
     }
-    return `${host}:${port}`;
+    return '';
 };
 
 const proxyConnect = (target, socket, options) => {
@@ -34,7 +33,7 @@ const proxyConnect = (target, socket, options) => {
                 socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
             else
                 socket.write(Buffer.from([0x5, 0x05, 0x00, 0x01, 0x7f, 0x00, 0x00, 0x01, 0x00, 0x00]));
-            if (verbose) console.log('[!] Worker connection failed!');
+            if (options.verbose) console.log('[!] Worker connection failed!');
         }
         socket.shutdown();
     };
