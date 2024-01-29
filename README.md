@@ -84,6 +84,10 @@ For a http proxy, just change the type from `socks` to `http`, for example:
 bun proxy.js -a secret -p 8080 http myinstance.workers.dev
 ```
 
+## Limitations
+
+By default, Cloudflare doesn't allow connections to port 25 of any target. Also, connecting to Cloudflare address space from within a worker is not supported, so you might have problems accessing sites that are behind CF (there are some ways around it, but I will leave that as an exercise to the reader :smiley:).
+
 ## Notes
 
 Your ip address will rotate at each request, since the worker runs on the so-called serverless architecture, spawned in a distributed global network of servers owned by cloudflare. Each time you invoke a worker, a different server might be provisioned depending on the current availability. These servers might be located on your region (which is usually the case) or even in another country.

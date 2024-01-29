@@ -170,7 +170,7 @@ const parseOptions = (argv) => {
                 options.server = httpServer;
                 break;
             default:
-                if (/^\w+(\.\w+)+$/.test(argv[i])) {
+                if (/^[\w\-]+(\.[\w\-]+)+$/.test(argv[i])) {
                     options.worker = argv[i];
                 } else {
                     console.log(`Invalid option: ${argv[i]}`);
