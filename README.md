@@ -102,7 +102,9 @@ bun proxy.js -a secret -p 8080 http myinstance.workers.dev
 curl -x localhost:8080 https://myip.wtf/json
 ```
 
-> Or simply go to the address below on the URL bar.
+> Or simply go to the address below on the URL bar. Remember to configure the proxy on the browser, 
+> I suggest this extension [Foxy proxy standard](https://addons.mozilla.org/pt-BR/firefox/addon/foxyproxy-standard/),
+> or in your operational system.
 
 ```
 https://myip.wtf/json
