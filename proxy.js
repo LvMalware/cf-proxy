@@ -1,17 +1,19 @@
 const parseTarget = (data) => {
     try {
         return String(data).toLowerCase().split('\n')
-            .filter( l => l.startsWith('host: ') ).pop().split(': ')
+            .filter(l => l.startsWith('host: ')).pop().split(': ')
             .pop().trim();
-    } catch(e) {
+    } catch (e) {
         // log
     }
+
     return '';
 };
 
 const proxyConnect = (target, socket, options) => {
     if (options.verbose)
         console.log(`[+] Proxying connection to ${target} via ${options.worker}`);
+
     const ws = new WebSocket(`wss://${options.worker}`, {
         headers: {
             Authorization: options.authorization,
@@ -36,6 +38,7 @@ const proxyConnect = (target, socket, options) => {
                 socket.write(Buffer.from([0x5, 0x05, 0x00, 0x01, 0x7f, 0x00, 0x00, 0x01, 0x00, 0x00]));
             if (options.verbose) console.log('[!] Worker connection failed!');
         }
+
         socket.shutdown();
     };
 
@@ -73,21 +76,26 @@ const socks5Server = (options) => Bun.listen({
                 socket.proxy.send(data);
                 return;
             }
+
             switch (socket.step) {
                 case 0:
                     if (data[0] != 0x05) {
                         if (options.verbose) console.log('[!] SOCKS version mismatch');
                         socket.shutdown();
                     }
+
                     if (!data.slice(2).includes(0x00)) {
                         // either is not a real socks client, or it needs to be authenticated somehow
                         if (options.verbose) console.log('[!] SOCKS client error');
                         socket.shutdown();
                     }
+
                     // no auth required
                     socket.write(Buffer.from([0x5, 0x00]));
-                    socket.step ++;
+                    socket.step++;
+
                     break;
+
                 case 1:
                     if (data[0] != 0x05 || data[2] != 0x00) {
                         if (options.verbose) console.log('[!] SOCKS version mismatch');
@@ -106,17 +114,19 @@ const socks5Server = (options) => Bun.listen({
 
                     if (data[3] == 0x1) {
                         // ipv4
-                        target = data.slice(4,8).map(n => n.toString()).join('.');
+                        target = data.slice(4, 8).map(n => n.toString()).join('.');
                     } else if (data[3] == 0x3) {
                         // domain
                         target = String(Buffer.from(data.slice(5, 5 + data[4])));
                     } else if (data[3] == 0x4) {
                         // ipv6
-                        const ipv6 = Array.from(data.slice(4,20)).map(b => b.toString(16).padStart(2,0));
+                        const ipv6 = Array.from(data.slice(4, 20)).map(b => b.toString(16).padStart(2, 0));
+
                         for (let i = 0; i < ipv6.length; i += 2) {
                             if (i != 0) target += ':';
                             target += ipv6.slice(i, i + 2).join('');
                         }
+
                         // ipv6 short form
                         target = target.replaceAll(':00', ':').replaceAll(':00', ':');
                         target = `[${target.replaceAll(':::', ':')}]`;
@@ -126,9 +136,11 @@ const socks5Server = (options) => Bun.listen({
                             console.log('[!] Client request could not be satisfied');
                         socket.shutdown();
                     }
+
                     const port = data.at(-1) + data.at(-2) * 256;
                     target = `${target}:${port}`;
                     socket.proxy = proxyConnect(target, socket, options);
+
                     break;
             }
         }
@@ -139,12 +151,12 @@ const parseOptions = (argv) => {
     // poor man's arg parser
 
     if (argv.length < 2) {
-        return {help: true};
+        return { help: true };
     }
 
-    const options = { };
+    const options = {};
 
-    for (let i = 0; i < argv.length; i ++) {
+    for (let i = 0; i < argv.length; i++) {
         switch (argv[i]) {
             case '-h':
             case '--help':
@@ -184,7 +196,9 @@ const parseOptions = (argv) => {
 
 function main() {
     const options = parseOptions(Bun.argv.slice(2));
+
     if (!options) return -1;
+
     if (options.help) {
         console.log(`${import.meta.file} - Proxy requests through CloudFlare workers`);
         console.log(`Usage: bun ${import.meta.file} [options] <socks|http> <worker>`);
@@ -200,11 +214,13 @@ function main() {
         console.log('')
         console.log('By Lucas V. Araujo <root@lva.sh>');
         console.log('More at https://github.com/lvmalware');
+
         return 0;
     }
 
     const server = options.server(options);
     console.log(`[+] ${options.type} proxy server listening on ${server.hostname}:${server.port}`);
+
     return 0;
 }
 
