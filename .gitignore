@@ -3,3 +3,6 @@ bun.lockb
 node_modules/
 config.json
 .aider*
+
+# Local Netlify folder
+.netlify
