@@ -103,9 +103,29 @@ maybe_deploy_netlify() {
   # Detect if this repo is linked to a Netlify site
   # We consider it linked if either netlify.toml or .netlify/state.json exists
   if [[ ! -f "netlify.toml" && ! -f ".netlify/state.json" ]]; then
-    echo "[i] Netlify CLI detected but no linked site (missing netlify.toml or .netlify/state.json). Skipping Netlify deployment." >&2
-    echo ""
-    return 0
+    echo "[i] Netlify CLI detected but no linked site (missing netlify.toml or .netlify/state.json)." >&2
+    if [[ -t 0 ]]; then
+      read -r -p "[?] Would you like to run 'netlify init' now to link or create a site? [y/N] " ans
+      case "${ans:-}" in
+        [Yy]*)
+          echo "[+] Running 'netlify init'..."
+          if ! netlify init; then
+            echo "[!] 'netlify init' failed or was cancelled. Skipping Netlify deployment." >&2
+            echo ""
+            return 0
+          fi
+          ;;
+        *)
+          echo "[i] Skipping Netlify deployment." >&2
+          echo ""
+          return 0
+          ;;
+      esac
+    else
+      echo "[i] Non-interactive terminal detected; cannot run 'netlify init'. Skipping Netlify deployment." >&2
+      echo ""
+      return 0
+    fi
   fi
 
   echo "[+] Attempting Netlify function deployment..."
