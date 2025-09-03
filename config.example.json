@@ -11,5 +11,8 @@
   "max_retries": 5,
   "retry_initial_backoff": 1000,
   "retry_factor": 2,
-  "load_balancing_strategy": "random"
+  "load_balancing_strategy": "random",
+  "netlify_tunnel_url": "https://your-netlify-function.netlify.app/.netlify/functions/tunnel",
+  "netlify_tunnel_token": "your-netlify-token",
+  "cloudflare_detection_enabled": true
 }

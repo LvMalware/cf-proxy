@@ -23,7 +23,8 @@ export const httpServer = (options) => {
       try {
         if (!socket.proxy) {
           const target = parseTarget(data);
-          socket.proxy = proxyConnect(target, socket, options);
+          // Pass initialData so proxy can decide tunnel vs websocket and reuse the bytes
+          socket.proxy = await proxyConnect(target, socket, options, data);
         } else {
           socket.proxy.send(data);
         }
