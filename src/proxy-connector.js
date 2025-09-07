@@ -60,6 +60,7 @@ const connectViaWebSocket = (target, socket, options, connection) => {
           socket.write('HTTP/1.1 200 OK\r\n\r\n');
         else
           socket.write(Buffer.from([0x5, 0x00, 0x00, 0x01, 0x7f, 0x00, 0x00, 0x01, 0x00, 0x00]));
+        log.info('[Debug] WebSocket opened, resolving promise.');
         resolve();
       };
 
@@ -86,7 +87,7 @@ const connectViaWebSocket = (target, socket, options, connection) => {
       };
 
       ws.onclose = (e) => {
-        log.warn('WebSocket onclose', { code: e.code, reason: e.reason });
+        log.warn('WebSocket onclose', { code: e.code, reason: e.reason, opened: opened });
 
         if (!opened) {
           // connection closed before open (e.g., handshake fail)
@@ -284,7 +285,7 @@ export const proxyConnect = (target, socket, options, initialData) => {
     try {
       await connectViaWebSocket(target, socket, options, connection);
     } catch (error) {
-      log.error(`[Failover] Primary connection to ${target} failed:`, error?.message || error);
+      log.error(`[Failover] PROMISE REJECTED. Primary connection to ${target} failed:`, error?.message || error);
       
       // Mark domain as failed
       markAsFailed(domain);

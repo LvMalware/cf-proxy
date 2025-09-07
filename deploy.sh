@@ -263,8 +263,8 @@ main() {
   local proxy_args=("$TYPE" -a "$TOKEN" -p "$FREE_PORT" --worker "$HOST0" --worker "$HOST1")
   
   if [[ -n "$NETLIFY_TUNNEL_URL" ]]; then
-    echo "    Tunnel: ${NETLIFY_TUNNEL_URL} (cloudflare_detection_enabled=true)"
-    proxy_args+=("--function" "$NETLIFY_TUNNEL_URL" "--netlify-tunnel-token" "$TOKEN" "--cloudflare-detection-enabled")
+    echo "    Tunnel: ${NETLIFY_TUNNEL_URL} (failover enabled)"
+    proxy_args+=("--function" "$NETLIFY_TUNNEL_URL" "--netlify-tunnel-token" "$TOKEN")
   fi
   
   echo "[i] Running command: bun proxy.js ${proxy_args[*]}"
