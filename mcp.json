@@ -23,7 +23,18 @@
         "git_diff",
         "ai_edit",
         "git_stage_and_commit",
-        "execute_command"
+        "execute_command",
+        "git_status",
+        "git_log",
+        "git_branch",
+        "git_show"
+      ],
+      "disabledTools": [
+        "execute_command",
+        "aider_status",
+        "write_to_file",
+        "read_file",
+        "git_apply_diff"
       ]
     }
   },

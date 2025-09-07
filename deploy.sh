@@ -48,7 +48,7 @@ wrangler_deploy_and_get_url() {
   pushd "$WORKER_DIR" >/dev/null
   # Capture output; tee to stderr for user visibility while capturing to variable
   local output
-  if ! output=$(wrangler deploy 2>&1 | tee /dev/stderr); then
+  if ! output=$(wrangler deploy 2>&1); then
     echo "[!] wrangler deploy failed" >&2
     popd >/dev/null || true
     return 1
@@ -117,7 +117,9 @@ maybe_deploy_netlify() {
   # Set env var for function auth BEFORE deploy starts
   echo "[+] Setting Netlify env var TUNNEL_TOKEN..." >&2
   # Redirect stdout to stderr to prevent it from being captured by the command substitution
-  if ! netlify env:set TUNNEL_TOKEN "$token" --force >&2; then
+  # Redirect stdout to /dev/null to prevent its "success" message from being captured by the command substitution.
+  # We only care about the exit code, which the `if` statement checks.
+  if ! netlify env:set TUNNEL_TOKEN "$token" --force >/dev/null; then
     echo "[!] Failed to set Netlify env var TUNNEL_TOKEN. The tunnel may use an old token." >&2
   fi
 
@@ -126,11 +128,11 @@ maybe_deploy_netlify() {
   : > "$EMPTY_DIR/index.html"
 
   local output url
-  if output=$(netlify deploy --prod --functions netlify/functions --dir "$EMPTY_DIR" 2>&1 | tee /dev/stderr); then
+  if output=$(netlify deploy --prod --functions netlify/functions --dir "$EMPTY_DIR" 2>&1); then
     :
   else
     echo "[i] Production deploy failed, trying draft deploy..." >&2
-    if ! output=$(netlify deploy --functions netlify/functions --dir "$EMPTY_DIR" 2>&1 | tee /dev/stderr); then
+    if ! output=$(netlify deploy --functions netlify/functions --dir "$EMPTY_DIR" 2>&1); then
       echo "[!] Netlify deploy failed. Continuing without tunnel." >&2
       echo ""
       return 0
