@@ -104,25 +104,9 @@ maybe_deploy_netlify() {
   # We consider it linked if either netlify.toml or .netlify/state.json exists
   if [[ ! -f "netlify.toml" && ! -f ".netlify/state.json" ]]; then
     echo "[i] Netlify CLI detected but no linked site (missing netlify.toml or .netlify/state.json)." >&2
-    if [[ -t 0 ]]; then
-      read -r -p "[?] Would you like to run 'netlify init' now to link or create a site? [y/N] " ans
-      case "${ans:-}" in
-        [Yy]*)
-          echo "[+] Running 'netlify init'..."
-          if ! netlify init; then
-            echo "[!] 'netlify init' failed or was cancelled. Skipping Netlify deployment." >&2
-            echo ""
-            return 0
-          fi
-          ;;
-        *)
-          echo "[i] Skipping Netlify deployment." >&2
-          echo ""
-          return 0
-          ;;
-      esac
-    else
-      echo "[i] Non-interactive terminal detected; cannot run 'netlify init'. Skipping Netlify deployment." >&2
+    echo "[+] Forcing interactive 'netlify init' by connecting to terminal..."
+    if ! netlify init < /dev/tty; then
+      echo "[!] 'netlify init' failed or was cancelled. Skipping Netlify deployment." >&2
       echo ""
       return 0
     fi
@@ -272,39 +256,19 @@ main() {
     echo "[i] Netlify CLI not found; skipping tunnel deployment."
   fi
 
-  echo "[+] Writing config.json with the new workers and token..."
-  # Always write worker config and add Netlify settings if available
-  {
-    cat <<JSON
-{
-  "worker": [
-    "${HOST0}",
-    "${HOST1}"
-  ],
-  "authorization": "${TOKEN}",
-  "port": ${FREE_PORT},
-  "type": "${TYPE}",
-  "verbose": false,
-  "load_balancing_strategy": "random"$(
-    if [[ -n "$NETLIFY_TUNNEL_URL" ]]; then
-      printf ',\n  "netlify_tunnel_url": "%s",\n  "netlify_tunnel_token": "%s",\n  "cloudflare_detection_enabled": true' "$NETLIFY_TUNNEL_URL" "$TOKEN"
-    fi
-  )
-}
-JSON
-  } > config.json
-
-  echo "[+] Configuration written to config.json"
-  echo "    Workers: ${HOST0}, ${HOST1}"
-  echo "    Type: ${TYPE}, Port: ${FREE_PORT}"
-  if [[ -n "$NETLIFY_TUNNEL_URL" ]]; then
-    echo "    Tunnel: ${NETLIFY_TUNNEL_URL} (cloudflare_detection_enabled=true)"
-  fi
-
   echo "[+] Starting proxy client..."
   echo "    Press Ctrl+C to stop the proxy."
-  echo "[i] Running command: bun proxy.js $TYPE -a $TOKEN -p $FREE_PORT --worker $HOST0 --worker $HOST1"
-  bun proxy.js "$TYPE" -a "$TOKEN" -p "$FREE_PORT" --worker "$HOST0" --worker "$HOST1"
+  
+  # Build proxy arguments
+  local proxy_args=("$TYPE" -a "$TOKEN" -p "$FREE_PORT" --worker "$HOST0" --worker "$HOST1")
+  
+  if [[ -n "$NETLIFY_TUNNEL_URL" ]]; then
+    echo "    Tunnel: ${NETLIFY_TUNNEL_URL} (cloudflare_detection_enabled=true)"
+    proxy_args+=("--netlify-tunnel-url" "$NETLIFY_TUNNEL_URL" "--netlify-tunnel-token" "$TOKEN" "--cloudflare-detection-enabled")
+  fi
+  
+  echo "[i] Running command: bun proxy.js ${proxy_args[*]}"
+  bun proxy.js "${proxy_args[@]}"
 }
 
 main "$@"

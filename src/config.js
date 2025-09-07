@@ -1,13 +1,3 @@
-import { existsSync, readFileSync } from 'node:fs';
-
-const normalizeType = (t) => {
-  if (!t) return undefined;
-  const norm = String(t).trim().toUpperCase();
-  if (norm === 'HTTP') return 'HTTP';
-  if (norm === 'SOCKS' || norm === 'SOCKS5' || norm === 'SOCKS 5') return 'SOCKS5';
-  return undefined;
-};
-
 const parseBool = (v, fallback = undefined) => {
   if (v === undefined) return fallback;
   const s = String(v).trim().toLowerCase();
@@ -22,42 +12,12 @@ const parseNum = (v, fallback = undefined) => {
 };
 
 export const loadConfig = (argv = []) => {
-  // Load base config from config.json if present
+  // Load configuration from command-line arguments only
   let options = {
     workers: [],
   };
-  try {
-    if (existsSync('config.json')) {
-      const raw = readFileSync('config.json', 'utf-8');
-      const base = JSON.parse(raw);
-      options = { ...options, ...base };
-      const baseType = normalizeType(base.type);
-      if (baseType) options.type = baseType; // normalize to expected values
 
-      if (base.worker) {
-        if (Array.isArray(base.worker)) {
-          options.workers.push(...base.worker);
-        } else if (typeof base.worker === 'string') {
-          options.workers.push(base.worker);
-        }
-        options.worker = undefined; // use options.workers
-      }
-      if (base.load_balancing_strategy) {
-        options.strategy = base.load_balancing_strategy;
-      }
-
-      // Normalize retry-related options if present
-      if (base.retry_enabled !== undefined) options.retry_enabled = !!base.retry_enabled;
-      if (base.max_retries !== undefined) options.max_retries = parseNum(base.max_retries);
-      if (base.retry_initial_backoff !== undefined) options.retry_initial_backoff = parseNum(base.retry_initial_backoff);
-      if (base.retry_factor !== undefined) options.retry_factor = parseNum(base.retry_factor);
-    }
-  } catch (e) {
-    console.log('[!] Failed to read config.json, continuing with defaults and CLI args');
-    if (process.env.DEBUG) console.error(e);
-  }
-
-  // CLI parsing (overrides config.json)
+  // CLI parsing
   for (let i = 0; i < argv.length; i++) {
     switch (argv[i]) {
       case '-h':
@@ -109,6 +69,15 @@ export const loadConfig = (argv = []) => {
         break;
       case '--strategy':
         options.strategy = argv[++i];
+        break;
+      case '--netlify-tunnel-url':
+        options.netlify_tunnel_url = argv[++i];
+        break;
+      case '--netlify-tunnel-token':
+        options.netlify_tunnel_token = argv[++i];
+        break;
+      case '--cloudflare-detection-enabled':
+        options.cloudflare_detection_enabled = true;
         break;
       default:
         if (/^[\w\-]+(\.[\w\-]+)+$/.test(argv[i])) {

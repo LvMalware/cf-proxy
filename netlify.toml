@@ -1,0 +1,12 @@
+[functions]
+  directory = "netlify/functions"
+
+[dev]
+  port = 8888
+  publish = "public"
+  framework = "#static"
+
+[build]
+  command = "echo 'No build command'"
+  functions = "netlify/functions"
+  publish = "public"

@@ -18,8 +18,16 @@
       ]
     },
     "devtools": {
-      "url": "http://127.0.0.1:1337/sse"
+      "url": "http://127.0.0.1:1337/sse",
+      "alwaysAllow": [
+        "git_diff",
+        "ai_edit",
+        "git_stage_and_commit"
+      ]
     }
   },
-  "coreTools": ["read_many_files", "web_fetch"]
+  "coreTools": [
+    "read_many_files",
+    "web_fetch"
+  ]
 }
