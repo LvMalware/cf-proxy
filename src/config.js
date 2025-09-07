@@ -70,7 +70,7 @@ export const loadConfig = (argv = []) => {
       case '--strategy':
         options.strategy = argv[++i];
         break;
-      case '--netlify-tunnel-url':
+      case '--function':
         options.netlify_tunnel_url = argv[++i];
         break;
       case '--netlify-tunnel-token':

@@ -112,19 +112,19 @@ maybe_deploy_netlify() {
     fi
   fi
 
-  echo "[+] Attempting Netlify function deployment..."
+  echo "[+] Attempting Netlify function deployment..." >&2
+
+  # Set env var for function auth BEFORE deploy starts
+  echo "[+] Setting Netlify env var TUNNEL_TOKEN..." >&2
+  # Redirect stdout to stderr to prevent it from being captured by the command substitution
+  if ! netlify env:set TUNNEL_TOKEN "$token" --force >&2; then
+    echo "[!] Failed to set Netlify env var TUNNEL_TOKEN. The tunnel may use an old token." >&2
+  fi
 
   # Create an empty dir to satisfy --dir requirement for deploy
   mkdir -p "$EMPTY_DIR"
   : > "$EMPTY_DIR/index.html"
 
-  # Set env var for function auth
-  if ! netlify env:set TUNNEL_TOKEN "$token" >/dev/null 2>&1; then
-    echo "[!] Failed to set Netlify env var TUNNEL_TOKEN (site may not be linked)." >&2
-    # continue anyway
-  fi
-
-  # Try production deploy first, then fallback to draft
   local output url
   if output=$(netlify deploy --prod --functions netlify/functions --dir "$EMPTY_DIR" 2>&1 | tee /dev/stderr); then
     :
@@ -137,8 +137,8 @@ maybe_deploy_netlify() {
     fi
   fi
 
-  # Parse Website URL (prod) or Website Draft URL (draft)
-  url=$(printf '%s\n' "$output" | awk -F': ' '/Website (Draft )?URL:/ {print $2}' | tail -n1 | sed 's/[[:space:]]*$//')
+  # Parse Website URL (prod) or Website Draft URL (draft), and trim whitespace
+  url=$(printf '%s\n' "$output" | awk -F': ' '/Website (Draft )?URL:/ {print $2}' | tail -n1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
   if [[ -z "${url:-}" ]]; then
     echo "[!] Could not parse Netlify site URL from deploy output. Continuing without tunnel." >&2
     echo ""
@@ -264,7 +264,7 @@ main() {
   
   if [[ -n "$NETLIFY_TUNNEL_URL" ]]; then
     echo "    Tunnel: ${NETLIFY_TUNNEL_URL} (cloudflare_detection_enabled=true)"
-    proxy_args+=("--netlify-tunnel-url" "$NETLIFY_TUNNEL_URL" "--netlify-tunnel-token" "$TOKEN" "--cloudflare-detection-enabled")
+    proxy_args+=("--function" "$NETLIFY_TUNNEL_URL" "--netlify-tunnel-token" "$TOKEN" "--cloudflare-detection-enabled")
   fi
   
   echo "[i] Running command: bun proxy.js ${proxy_args[*]}"
