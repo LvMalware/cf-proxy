@@ -32,6 +32,7 @@ const connectViaWebSocket = (target, socket, options, connection) => {
     const factor = Number.isFinite(options.retry_factor) ? options.retry_factor : 2;
 
     let opened = false; // track if the connection has been opened
+    let cleanClose = false; // track if the connection was closed cleanly
 
     const connectOnce = () => {
       attempts += 1;
@@ -60,10 +61,10 @@ const connectViaWebSocket = (target, socket, options, connection) => {
           socket.write('HTTP/1.1 200 OK\r\n\r\n');
         else
           socket.write(Buffer.from([0x5, 0x00, 0x00, 0x01, 0x7f, 0x00, 0x00, 0x01, 0x00, 0x00]));
-        log.info('[Debug] WebSocket opened, resolving promise.');
-        resolve();
+        log.info('[Debug] WebSocket opened.');
+        // Do not resolve here; wait for first message or clean close
       };
-
+ 
       ws.onerror = async (e) => {
         const msg = e?.message || e;
         log.error('WebSocket onerror', msg);
@@ -88,7 +89,12 @@ const connectViaWebSocket = (target, socket, options, connection) => {
 
       ws.onclose = (e) => {
         log.warn('WebSocket onclose', { code: e.code, reason: e.reason, opened: opened });
-
+        
+        if (e.code === 1000) {
+          cleanClose = true;
+          resolve(); // Clean close, resolve the promise
+        }
+ 
         if (!opened) {
           // connection closed before open (e.g., handshake fail)
           if (retryEnabled && attempts <= maxRetries) {
@@ -97,7 +103,7 @@ const connectViaWebSocket = (target, socket, options, connection) => {
             sleep(delay).then(connectOnce);
             return;
           }
-
+ 
           if (e.reason === "Expected 101 status code") {
             if (options.type === 'HTTP')
               socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
@@ -105,25 +111,25 @@ const connectViaWebSocket = (target, socket, options, connection) => {
               socket.write(Buffer.from([0x5, 0x05, 0x00, 0x01, 0x7f, 0x00, 0x00, 0x01, 0x00, 0x00]));
             log.error('[!] Worker connection failed!', { code: e.code, reason: e.reason });
           }
-
+ 
           reject(new Error(`WebSocket closed: ${e.reason}`));
           try { socket.shutdown(); } catch (_) {}
           return;
         }
-
-        // If already opened, do not retry; close path remains the same as before
-        if (e.reason === "Expected 101 status code") {
-          if (options.type === 'HTTP')
-            socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
-          else
-            socket.write(Buffer.from([0x5, 0x05, 0x00, 0x01, 0x7f, 0x00, 0x00, 0x01, 0x00, 0x00]));
-          log.error('[!] Worker connection failed!', { code: e.code, reason: e.reason });
+ 
+        // If connection was opened but closed uncleanly, and we haven't resolved yet
+        if (!cleanClose) {
+          reject(new Error(`WebSocket closed uncleanly: code=${e.code}, reason=${e.reason}`));
         }
-
+ 
         try { socket.shutdown(); } catch (_) {}
       };
-
+ 
       ws.onmessage = (e) => {
+        if (!cleanClose) { // if it's not already closing cleanly
+            resolve(); // First message is a good sign, resolve the promise.
+            cleanClose = true; // prevent re-resolving
+        }
         log.debug('WebSocket onmessage', { bytes: e?.data?.byteLength ?? (e?.data?.length ?? 'unknown') });
         socket.write(e.data);
       };
@@ -170,10 +176,19 @@ const connectViaNetlifyTunnel = async (target, socket, options, connection, init
   }
 
   const { method, path, headers, bodyChunk } = parsed;
-  // CONNECT method (HTTP tunneling) requires raw TCP, fallback to Worker path
+  // CONNECT method (HTTP tunneling) requires raw TCP, which the tunnel doesn't support.
   if (String(method).toUpperCase() === 'CONNECT') {
-    log.info('[Tunnel] CONNECT method detected, using Worker (WebSocket) path');
-    return connectViaWebSocket(target, socket, options, connection);
+    log.error(`[Tunnel] Cannot handle CONNECT method for failed domain ${extractDomain(target)}. Terminating connection.`);
+    try {
+      if (options.type === 'HTTP') {
+        socket.write('HTTP/1.1 501 Not Implemented\r\n\r\n');
+      } else {
+        // SOCKS5 general server failure reply
+        socket.write(Buffer.from([0x05, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]));
+      }
+    } catch (_) { /* ignore */ }
+    try { socket.shutdown(); } catch (_) { /* ignore */ }
+    return; // Stop execution
   }
   const hostHeader = headers.host || extractDomain(target);
   if (!hostHeader) {
