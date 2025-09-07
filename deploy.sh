@@ -128,19 +128,19 @@ maybe_deploy_netlify() {
   : > "$EMPTY_DIR/index.html"
 
   local output url
-  if output=$(netlify deploy --prod --functions netlify/functions --dir "$EMPTY_DIR" 2>&1); then
+  if output=$(NO_COLOR=1 netlify deploy --prod --functions netlify/functions --dir "$EMPTY_DIR" 2>&1); then
     :
   else
     echo "[i] Production deploy failed, trying draft deploy..." >&2
-    if ! output=$(netlify deploy --functions netlify/functions --dir "$EMPTY_DIR" 2>&1); then
+    if ! output=$(NO_COLOR=1 netlify deploy --functions netlify/functions --dir "$EMPTY_DIR" 2>&1); then
       echo "[!] Netlify deploy failed. Continuing without tunnel." >&2
       echo ""
       return 0
     fi
   fi
 
-  # Parse Website URL (prod) or Website Draft URL (draft), and trim whitespace
-  url=$(printf '%s\n' "$output" | awk -F': ' '/Website (Draft )?URL:/ {print $2}' | tail -n1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+  # Parse Website URL (prod) or Website Draft URL (draft), and trim whitespace using xargs
+  url=$(printf '%s\n' "$output" | awk -F': ' '/Website (Draft )?URL:/ {print $2}' | tail -n1 | xargs)
   if [[ -z "${url:-}" ]]; then
     echo "[!] Could not parse Netlify site URL from deploy output. Continuing without tunnel." >&2
     echo ""

@@ -126,10 +126,6 @@ const connectViaWebSocket = (target, socket, options, connection) => {
       };
  
       ws.onmessage = (e) => {
-        if (!cleanClose) { // if it's not already closing cleanly
-            resolve(); // First message is a good sign, resolve the promise.
-            cleanClose = true; // prevent re-resolving
-        }
         log.debug('WebSocket onmessage', { bytes: e?.data?.byteLength ?? (e?.data?.length ?? 'unknown') });
         socket.write(e.data);
       };
@@ -214,6 +210,29 @@ const connectViaNetlifyTunnel = async (target, socket, options, connection, init
   };
 
   try {
+    const sanitizeUrl = (u) => String(u)
+      // strip ANSI escape sequences
+      .replace(/\x1B\[[0-9;]*[A-Za-z]/g, '')
+      // strip carriage returns
+      .replace(/\r/g, '')
+      .trim();
+    
+    let tunnelUrl = sanitizeUrl(options.netlify_tunnel_url || '');
+
+    // Ensure it looks like a URL and add the function path if someone passed the site root
+    if (tunnelUrl && !/\.netlify\.app\/\.netlify\/functions\//.test(tunnelUrl)) {
+      tunnelUrl = tunnelUrl.replace(/\/+$/, '') + '/.netlify/functions/tunnel';
+    }
+    
+    try {
+      // Validate it’s a proper absolute URL
+      new URL(tunnelUrl);
+    } catch (e) {
+      log.error('[Tunnel] Invalid Netlify tunnel URL after sanitize:', JSON.stringify(tunnelUrl));
+      // Fall back to WebSocket path
+      return connectViaWebSocket(target, socket, options, connection);
+    }
+
     const reqInit = {
       method,
       headers: {
@@ -228,7 +247,7 @@ const connectViaNetlifyTunnel = async (target, socket, options, connection, init
       reqInit.body = bodyStream;
     }
 
-    const res = await fetch(options.netlify_tunnel_url, reqInit);
+    const res = await fetch(tunnelUrl, reqInit);
 
     // Write status line
     const statusText = res.statusText || 'OK';
