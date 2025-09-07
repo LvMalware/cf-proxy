@@ -76,9 +76,6 @@ export const loadConfig = (argv = []) => {
       case '--netlify-tunnel-token':
         options.netlify_tunnel_token = argv[++i];
         break;
-      case '--cloudflare-detection-enabled':
-        options.cloudflare_detection_enabled = true;
-        break;
       default:
         if (/^[\w\-]+(\.[\w\-]+)+$/.test(argv[i])) {
           options.workers.push(argv[i]);

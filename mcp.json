@@ -22,7 +22,8 @@
       "alwaysAllow": [
         "git_diff",
         "ai_edit",
-        "git_stage_and_commit"
+        "git_stage_and_commit",
+        "execute_command"
       ]
     }
   },
