@@ -176,20 +176,6 @@ const connectViaNetlifyTunnel = async (target, socket, options, connection, init
   }
 
   const { method, path, headers, bodyChunk } = parsed;
-  // CONNECT method (HTTP tunneling) requires raw TCP, which the tunnel doesn't support.
-  if (String(method).toUpperCase() === 'CONNECT') {
-    log.error(`[Tunnel] Cannot handle CONNECT method for failed domain ${extractDomain(target)}. Terminating connection.`);
-    try {
-      if (options.type === 'HTTP') {
-        socket.write('HTTP/1.1 501 Not Implemented\r\n\r\n');
-      } else {
-        // SOCKS5 general server failure reply
-        socket.write(Buffer.from([0x05, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]));
-      }
-    } catch (_) { /* ignore */ }
-    try { socket.shutdown(); } catch (_) { /* ignore */ }
-    return; // Stop execution
-  }
   const hostHeader = headers.host || extractDomain(target);
   if (!hostHeader) {
     log.warn('[Tunnel] Missing Host header, falling back to worker path');

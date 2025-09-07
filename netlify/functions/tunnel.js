@@ -1,3 +1,5 @@
+import net from 'net';
+
 /**
  * @param {Request} req
  * @returns {Promise<Response>}
@@ -52,8 +54,62 @@ async function handleRequest(req) {
     return new Response('Blocked IP range', { status: 400 });
   }
 
-  // 4. Forward the request
   const method = (req.headers.get('x-target-method') || 'GET').toUpperCase();
+
+  // Handle CONNECT method for TCP tunneling
+  if (method === 'CONNECT') {
+    try {
+      const { readable, writable } = new TransformStream();
+      const socket = new net.Socket();
+      
+      // Set a 30-second timeout for the socket
+      socket.setTimeout(30000);
+      
+      socket.connect({ host: url.hostname, port: url.port }, () => {
+        if (req.body) {
+          req.body.pipeTo(new WritableStream({
+            write(chunk) {
+              socket.write(chunk);
+            },
+            close() {
+              socket.end();
+            },
+            abort(err) {
+              socket.destroy(err);
+            },
+          })).catch(err => {
+              socket.destroy(err);
+          });
+        }
+      });
+
+      const writer = writable.getWriter();
+      socket.on('data', (chunk) => {
+        writer.write(chunk);
+      });
+      socket.on('end', () => {
+        writer.close();
+      });
+      socket.on('error', (err) => {
+        writer.abort(err);
+        socket.destroy();
+      });
+      // Handle socket timeout
+      socket.on('timeout', () => {
+        socket.destroy(new Error('Socket timeout'));
+      });
+
+      return new Response(readable, {
+        status: 200,
+        statusText: 'Connection Established'
+      });
+
+    } catch (error) {
+      return new Response('Bad Gateway', { status: 502 });
+    }
+  }
+
+  // 5. Forward regular HTTP requests
   const fwdHeaders = new Headers();
   const hopByHop = new Set([
     'authorization',
