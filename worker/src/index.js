@@ -19,7 +19,7 @@ export default {
             const [client, server] = Object.values(websocket);
 
             server.accept();
-            server.addEventListener('message', e => writer.write(e.data));
+            server.addEventListener('message', e => e.data.arrayBuffer().then( buf => writer.write(buf) ));
 
             target.readable.pipeTo(new WritableStream({
                 write(chunk) {
